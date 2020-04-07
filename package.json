@@ -1,12 +1,20 @@
 {
-  "name": "epic-games-bot",
-  "version": "1.0.0",
+  "name": "@george-lim/epic-games-bot",
+  "version": "1.0.1",
   "description": "Find and purchase all promotional free items on Epic Games",
   "main": "index.js",
   "repository": "github:george-lim/epic-games-bot",
+  "keywords": [
+    "nodejs",
+    "puppeteer",
+    "javascript",
+    "web",
+    "automation",
+    "headless",
+    "epic-games",
+    "bot"
+  ],
   "author": "George Lim",
-  "license": "MIT",
-  "dependencies": {
-    "puppeteer": "2.0.0"
-  }
+  "license": "MIT"
 }
+

@@ -1,3 +1,5 @@
+const DEFAULT_PURCHASE_ATTEMPTS = 2 // Default maximum purchase attempts
+
 module.exports = {
   /**
    * Get all free item URLs on Epic Games
@@ -57,12 +59,18 @@ module.exports = {
 
       await page.type('#usernameOrEmail', usernameOrEmail)
       await page.type('#password', password)
-      await page.waitFor(3000) // Wait for login button to finish loading
+      const loginButton = await page.waitForSelector('#login')
+      await page.waitFor(2000) // Give loginButton time to load
 
-      await Promise.all([
-        page.click('#login'),
-        page.waitForNavigation()
-      ])
+      try {
+        await Promise.all([
+          loginButton.click(),
+          page.waitForNavigation()
+        ])
+      }
+      catch (error) {
+        throw new Error('Detected CAPTCHA challenge from Epic Games')
+      }
 
       return page.cookies()
     }
@@ -74,35 +82,42 @@ module.exports = {
 
   /**
    * Purchase item(s) on Epic Games
-   * @param {object}         page Puppeteer browser page
-   * @param {array.<string>} urls Array of purchase URLs
+   * @param {object}         page             Puppeteer browser page
+   * @param {array.<string>} urls             Array of purchase URLs
+   * @param {number}         purchaseAttempts Optional maximum purchase attempts
    */
-  purchaseAll: async (page, urls) => {
+  purchaseAll: async (page, urls, purchaseAttempts) => {
+    purchaseAttempts = purchaseAttempts || DEFAULT_PURCHASE_ATTEMPTS
+
     for (const url of urls) {
-      // Retry request up to 3 times
-      for (let i = 0; i < 3; ++i) {
+      for (let i = 0; i < purchaseAttempts; ++i) {
         try {
           await Promise.all([
             page.goto(url, { waitUntil: 'networkidle2' }),
             page.waitForNavigation()
           ])
+
+          const isItemAvailable = page.url().includes('purchase')
+          if (!isItemAvailable) {
+            break
+          }
+
+          const purchaseButton = await page.waitForSelector('.btn-primary')
+          await page.waitFor(2000) // Give purchaseButton time to load
+
+          await Promise.all([
+            purchaseButton.click(),
+            page.waitForNavigation()
+          ])
+
           break
         }
-        catch (e) {}
+        catch (error) {
+          if (i + 1 == purchaseAttempts) {
+            throw error
+          }
+        }
       }
-
-      const isItemAvailable = page.url().includes('purchase')
-      if (!isItemAvailable) {
-        continue
-      }
-
-      await page.waitForSelector('.btn-primary')
-      await page.waitFor(3000) // Wait for purchase button to finish loading
-
-      await Promise.all([
-        page.click('.btn-primary'),
-        page.waitForNavigation()
-      ])
     }
   }
 }

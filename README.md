@@ -1,6 +1,8 @@
 # Epic Games Bot
 
 <!-- [START badges] -->
+[![npm](https://img.shields.io/npm/v/epic-games-bot)](https://www.npmjs.com/package/epic-games-bot)
+[![GitHub Packages](https://img.shields.io/github/package-json/v/george-lim/epic-games-bot)](https://github.com/george-lim/epic-games-bot/packages)
 [![Node.js](https://img.shields.io/badge/Environment-Node.js-brightgreen)](#)
 [![Puppeteer](https://img.shields.io/badge/API-Puppeteer-brightgreen)](#)
 [![License](https://img.shields.io/github/license/george-lim/epic-games-bot)](https://github.com/george-lim/epic-games-bot/blob/master/LICENSE)
@@ -16,8 +18,8 @@
 To use Epic Games Bot in your project, run:
 
 ```bash
-npm i epic-games-bot
-# or "yarn add epic-games-bot"
+npm i epic-games-bot puppeteer
+# or "yarn add epic-games-bot puppeteer"
 ```
 
 ### Usage
@@ -31,17 +33,18 @@ Save file as **purchaseItems.js**
 ```js
 (async () => {
   const puppeteer = require('puppeteer')
-  const bot = require('epic-games-bot')
-
-  const browser = await puppeteer.launch({ headless: true })
-  const page1 = await browser.newPage()
-  const page2 = await browser.newPage()
+  const bot = require('@george-lim/epic-games-bot')
+  let browser = null
 
   try {
+    browser = await puppeteer.launch({ headless: true })
+    const page1 = await browser.newPage()
+    const page2 = await browser.newPage()
+
     const urls = await bot.getURLs(page1, page2)
     urls.forEach(url => console.log(url))
 
-    // Optional: provide existing saved cookies
+    // Optional: Provide existing saved cookies
     let cookies = null
 
     if (cookies) {
@@ -60,13 +63,19 @@ Save file as **purchaseItems.js**
 
     // Purchase items if user successfully logged in
     if (cookies) {
-      await bot.purchaseAll(page1, urls)
+      // Optional: Provide maximum purchase attempts
+      const purchaseAttempts = 3
+      await bot.purchaseAll(page1, urls, purchaseAttempts)
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error)
   }
-
-  await browser.close()
+  finally {
+    if (browser !== null) {
+      await browser.close()
+    }
+  }
 })()
 ```
 
