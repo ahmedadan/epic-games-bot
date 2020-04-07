@@ -18,8 +18,8 @@
 To use Epic Games Bot in your project, run:
 
 ```bash
-npm i epic-games-bot puppeteer
-# or "yarn add epic-games-bot puppeteer"
+npm i @george-lim/epic-games-bot puppeteer
+# or "yarn add @george-lim/epic-games-bot puppeteer"
 ```
 
 ### Usage
