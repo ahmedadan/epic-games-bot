@@ -1,4 +1,7 @@
 const DEFAULT_PURCHASE_ATTEMPTS = 2 // Default maximum purchase attempts
+const DEFAULT_OPTIONS = {
+  waitUntil: 'networkidle2'
+}
 
 module.exports = {
   /**
@@ -8,9 +11,12 @@ module.exports = {
    * @return {array.<string>}       Array of purchase URLs
    */
   getURLs: async (page1, page2) => {
-    let urls = []
+    await Promise.all([
+      page1.goto('https://www.epicgames.com/store/en-US'),
+      page1.waitForNavigation(DEFAULT_OPTIONS)
+    ])
 
-    await page1.goto('https://www.epicgames.com/store/en-US')
+    let urls = []
     const hyperlinks = await page1.$x("//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'free')]")
 
     for (const hyperlink of hyperlinks) {
@@ -21,13 +27,17 @@ module.exports = {
         continue
       }
 
-      await page2.goto(href)
+      await Promise.all([
+        page2.goto(href),
+        page2.waitForNavigation(DEFAULT_OPTIONS)
+      ])
+
       let getItemButtons = await page2.$x("//button[contains(., 'Get')]")
 
       for (let i = 0; i < getItemButtons.length; ++i) {
         await Promise.all([
           getItemButtons[i].click(),
-          page2.waitForNavigation()
+          page2.waitForNavigation(DEFAULT_OPTIONS)
         ])
 
         const urlParams = new URLSearchParams(page2.url())
@@ -38,7 +48,11 @@ module.exports = {
           break
         }
 
-        await page2.goBack()
+        await Promise.all([
+          page2.goBack(),
+          page2.waitForNavigation(DEFAULT_OPTIONS)
+        ])
+
         getItemButtons = await page2.$x("//button[contains(., 'Get')]")
       }
     }
@@ -55,17 +69,21 @@ module.exports = {
    */
   login: async (page, usernameOrEmail, password) => {
     if (usernameOrEmail && password) {
-      await page.goto('https://www.epicgames.com/id/login', { waitUntil: 'networkidle2' })
+      await Promise.all([
+        page.goto('https://www.epicgames.com/id/login'),
+        page.waitForNavigation(DEFAULT_OPTIONS)
+      ])
 
       await page.type('#usernameOrEmail', usernameOrEmail)
       await page.type('#password', password)
+
       const loginButton = await page.waitForSelector('#login')
       await page.waitFor(2000) // Give loginButton time to load
 
       try {
         await Promise.all([
           loginButton.click(),
-          page.waitForNavigation()
+          page.waitForNavigation(DEFAULT_OPTIONS)
         ])
       }
       catch (error) {
@@ -75,7 +93,11 @@ module.exports = {
       return page.cookies()
     }
 
-    await page.goto('https://www.epicgames.com/site/en-US/error-404')
+    await Promise.all([
+      page.goto('https://www.epicgames.com/site/en-US/error-404'),
+      page.waitForNavigation(DEFAULT_OPTIONS)
+    ])
+
     const isLoggedInMenuItem = await page.$('.is-logged-in')
     return isLoggedInMenuItem ? page.cookies() : null
   },
@@ -93,8 +115,8 @@ module.exports = {
       for (let i = 0; i < purchaseAttempts; ++i) {
         try {
           await Promise.all([
-            page.goto(url, { waitUntil: 'networkidle2' }),
-            page.waitForNavigation()
+            page.goto(url),
+            page.waitForNavigation(DEFAULT_OPTIONS)
           ])
 
           const isItemAvailable = page.url().includes('purchase')
@@ -107,7 +129,7 @@ module.exports = {
 
           await Promise.all([
             purchaseButton.click(),
-            page.waitForNavigation()
+            page.waitForNavigation(DEFAULT_OPTIONS)
           ])
 
           break
