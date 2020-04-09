@@ -112,11 +112,13 @@ module.exports = {
    * @param {array.<string>} urls             Array of purchase URLs
    */
   purchaseAll: async (page, urls) => {
+    await page.setCookie(...AGE_GATE_COOKIE)
+
     for (const url of urls) {
       await Promise.all([
         page.goto(url),
         page.waitForNavigation(DEFAULT_OPTIONS),
-        page.waitFor(3000) // Give URL time to resolve
+        page.waitFor(5000) // Give URL time to resolve
       ])
 
       const isItemAvailable = page.url().includes('purchase')
