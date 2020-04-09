@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "epic-games-bot": "../..",
+    "puppeteer": "^2.1.1"
+  }
+}

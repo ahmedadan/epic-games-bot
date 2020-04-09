@@ -2,7 +2,6 @@
 
 <!-- [START badges] -->
 [![npm](https://img.shields.io/npm/v/epic-games-bot)](https://www.npmjs.com/package/epic-games-bot)
-[![GitHub Packages](https://img.shields.io/github/package-json/v/george-lim/epic-games-bot)](https://github.com/george-lim/epic-games-bot/packages)
 [![Node.js](https://img.shields.io/badge/Environment-Node.js-brightgreen)](#)
 [![Puppeteer](https://img.shields.io/badge/API-Puppeteer-brightgreen)](#)
 [![License](https://img.shields.io/github/license/george-lim/epic-games-bot)](https://github.com/george-lim/epic-games-bot/blob/master/LICENSE)
@@ -18,70 +17,21 @@
 To use Epic Games Bot in your project, run:
 
 ```bash
-npm i @george-lim/epic-games-bot puppeteer
-# or "yarn add @george-lim/epic-games-bot puppeteer"
+npm install epic-games-bot puppeteer
+# or "yarn add epic-games-bot puppeteer"
 ```
 
 ### Usage
 
-**Example** - Purchase all promotional free items on Epic Games:
+The provided [example project](https://github.com/george-lim/epic-games-bot/blob/master/examples/purchase-items) demonstrates how Epic Games Bot can be used alongside Puppeteer to purchase all promotional free items on Epic Games.
 
 Note: SSO login is currently unsupported.
 
-Save file as **purchaseItems.js**
-
-```js
-(async () => {
-  const puppeteer = require('puppeteer')
-  const bot = require('@george-lim/epic-games-bot')
-  let browser = null
-
-  try {
-    browser = await puppeteer.launch({ headless: true })
-    const page1 = await browser.newPage()
-    const page2 = await browser.newPage()
-
-    const urls = await bot.getURLs(page1, page2)
-    urls.forEach(url => console.log(url))
-
-    // Optional: Provide existing saved cookies
-    let cookies = null
-
-    if (cookies) {
-      // Log in and get updated cookies
-      await page1.setCookie(...cookies)
-      cookies = await bot.login(page1)
-    }
-    else {
-      // Provide account credentials to login
-      const usernameOrEmail = ''
-      const password = ''
-      cookies = await bot.login(page1, usernameOrEmail, password)
-    }
-
-    console.log(JSON.stringify(cookies, null, 2))
-
-    // Purchase items if user successfully logged in
-    if (cookies) {
-      // Optional: Provide maximum purchase attempts
-      const purchaseAttempts = 3
-      await bot.purchaseAll(page1, urls, purchaseAttempts)
-    }
-  }
-  catch (error) {
-    console.error(error)
-  }
-  finally {
-    if (browser !== null) {
-      await browser.close()
-    }
-  }
-})()
-```
-
-Execute script on the command line
-
+Execute script on the command line:
 ```bash
-node purchaseItems.js
+cd examples/purchase-items
+npm install
+# or "yarn install"
+node .
 ```
 <!-- [END getstarted] -->

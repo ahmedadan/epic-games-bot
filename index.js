@@ -1,4 +1,4 @@
-const DEFAULT_PURCHASE_ATTEMPTS = 2 // Default maximum purchase attempts
+const AGE_GATE_COOKIE = JSON.parse('[{"name":"HAS_ACCEPTED_AGE_GATE_ONCE","value":"true","domain":"www.epicgames.com","path":"/","expires":-1,"size":30,"httpOnly":false,"secure":false,"session":true}]')
 const DEFAULT_OPTIONS = {
   waitUntil: 'networkidle2'
 }
@@ -6,41 +6,45 @@ const DEFAULT_OPTIONS = {
 module.exports = {
   /**
    * Get all free item URLs on Epic Games
-   * @param  {object}         page1 First puppeteer browser page
-   * @param  {object}         page2 Second puppeteer browser page
-   * @return {array.<string>}       Array of purchase URLs
+   * @param  {object}         page Puppeteer browser page
+   * @return {array.<string>}      Array of purchase URLs
    */
-  getURLs: async (page1, page2) => {
+  getURLs: async page => {
     await Promise.all([
-      page1.goto('https://www.epicgames.com/store/en-US'),
-      page1.waitForNavigation(DEFAULT_OPTIONS)
+      page.goto('https://www.epicgames.com/store/en-US'),
+      page.waitForNavigation(DEFAULT_OPTIONS)
     ])
 
-    let urls = []
-    const hyperlinks = await page1.$x("//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'free')]")
+    await page.setCookie(...AGE_GATE_COOKIE)
+
+    const hyperlinks = await page.$x("//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'free')]")
+    const hrefs = []
 
     for (const hyperlink of hyperlinks) {
-      const href = await page1.evaluate(element => element.href, hyperlink)
+      const href = await page.evaluate(element => element.href, hyperlink)
 
-      const urlMatches = urls.filter(url => url.includes(href))
-      if (urlMatches.length > 0) {
-        continue
+      if (!hrefs.includes(href)) {
+        hrefs.push(href)
       }
+    }
 
+    const urls = []
+
+    for (const href of hrefs) {
       await Promise.all([
-        page2.goto(href),
-        page2.waitForNavigation(DEFAULT_OPTIONS)
+        page.goto(href),
+        page.waitForNavigation(DEFAULT_OPTIONS)
       ])
 
-      let getItemButtons = await page2.$x("//button[contains(., 'Get')]")
+      let getItemButtons = await page.$x("//button[contains(., 'Get')]")
 
       for (let i = 0; i < getItemButtons.length; ++i) {
         await Promise.all([
           getItemButtons[i].click(),
-          page2.waitForNavigation(DEFAULT_OPTIONS)
+          page.waitForNavigation()
         ])
 
-        const urlParams = new URLSearchParams(page2.url())
+        const urlParams = new URLSearchParams(page.url())
         const redirectURL = urlParams.get('redirectUrl')
         urls.push(redirectURL)
 
@@ -49,11 +53,11 @@ module.exports = {
         }
 
         await Promise.all([
-          page2.goBack(),
-          page2.waitForNavigation(DEFAULT_OPTIONS)
+          page.goBack(),
+          page.waitForNavigation(DEFAULT_OPTIONS)
         ])
 
-        getItemButtons = await page2.$x("//button[contains(., 'Get')]")
+        getItemButtons = await page.$x("//button[contains(., 'Get')]")
       }
     }
 
@@ -78,12 +82,12 @@ module.exports = {
       await page.type('#password', password)
 
       const loginButton = await page.waitForSelector('#login')
-      await page.waitFor(2000) // Give loginButton time to load
+      await page.waitFor(1000) // Give loginButton time to load
 
       try {
         await Promise.all([
           loginButton.click(),
-          page.waitForNavigation(DEFAULT_OPTIONS)
+          page.waitForNavigation()
         ])
       }
       catch (error) {
@@ -106,40 +110,27 @@ module.exports = {
    * Purchase item(s) on Epic Games
    * @param {object}         page             Puppeteer browser page
    * @param {array.<string>} urls             Array of purchase URLs
-   * @param {number}         purchaseAttempts Optional maximum purchase attempts
    */
-  purchaseAll: async (page, urls, purchaseAttempts) => {
-    purchaseAttempts = purchaseAttempts || DEFAULT_PURCHASE_ATTEMPTS
-
+  purchaseAll: async (page, urls) => {
     for (const url of urls) {
-      for (let i = 0; i < purchaseAttempts; ++i) {
-        try {
-          await Promise.all([
-            page.goto(url),
-            page.waitForNavigation(DEFAULT_OPTIONS)
-          ])
+      await Promise.all([
+        page.goto(url),
+        page.waitForNavigation(DEFAULT_OPTIONS),
+        page.waitFor(3000) // Give URL time to resolve
+      ])
 
-          const isItemAvailable = page.url().includes('purchase')
-          if (!isItemAvailable) {
-            break
-          }
+      const isItemAvailable = page.url().includes('purchase')
 
-          const purchaseButton = await page.waitForSelector('.btn-primary')
-          await page.waitFor(2000) // Give purchaseButton time to load
-
-          await Promise.all([
-            purchaseButton.click(),
-            page.waitForNavigation(DEFAULT_OPTIONS)
-          ])
-
-          break
-        }
-        catch (error) {
-          if (i + 1 == purchaseAttempts) {
-            throw error
-          }
-        }
+      if (!isItemAvailable) {
+        continue
       }
+
+      const purchaseButton = await page.waitForSelector('.btn-primary')
+
+      await Promise.all([
+        purchaseButton.click(),
+        page.waitForNavigation()
+      ])
     }
   }
 }
