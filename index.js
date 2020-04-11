@@ -1,7 +1,4 @@
 const AGE_GATE_COOKIE = JSON.parse('[{"name":"HAS_ACCEPTED_AGE_GATE_ONCE","value":"true","domain":"www.epicgames.com","path":"/","expires":-1,"size":30,"httpOnly":false,"secure":false,"session":true}]')
-const DEFAULT_OPTIONS = {
-  waitUntil: 'networkidle2'
-}
 
 module.exports = {
   /**
@@ -12,8 +9,10 @@ module.exports = {
   getURLs: async page => {
     await Promise.all([
       page.goto('https://www.epicgames.com/store/en-US'),
-      page.waitForNavigation(DEFAULT_OPTIONS)
+      page.waitForNavigation({ waitUntil: 'networkidle2' })
     ])
+
+    await page.waitFor(3000)
 
     await page.setCookie(...AGE_GATE_COOKIE)
 
@@ -33,8 +32,10 @@ module.exports = {
     for (const href of hrefs) {
       await Promise.all([
         page.goto(href),
-        page.waitForNavigation(DEFAULT_OPTIONS)
+        page.waitForNavigation({ waitUntil: 'networkidle2' })
       ])
+
+      await page.waitFor(3000)
 
       let getItemButtons = await page.$x("//button[contains(., 'Get')]")
 
@@ -54,8 +55,10 @@ module.exports = {
 
         await Promise.all([
           page.goBack(),
-          page.waitForNavigation(DEFAULT_OPTIONS)
+          page.waitForNavigation({ waitUntil: 'networkidle2' })
         ])
+
+        await page.waitFor(3000)
 
         getItemButtons = await page.$x("//button[contains(., 'Get')]")
       }
@@ -75,14 +78,17 @@ module.exports = {
     if (usernameOrEmail && password) {
       await Promise.all([
         page.goto('https://www.epicgames.com/id/login'),
-        page.waitForNavigation(DEFAULT_OPTIONS)
+        page.waitForNavigation({ waitUntil: 'networkidle2' })
       ])
+
+      await page.waitFor(3000)
 
       await page.type('#usernameOrEmail', usernameOrEmail)
       await page.type('#password', password)
 
       const loginButton = await page.waitForSelector('#login')
-      await page.waitFor(1000) // Give loginButton time to load
+
+      await page.waitFor(1000)
 
       try {
         await Promise.all([
@@ -99,8 +105,10 @@ module.exports = {
 
     await Promise.all([
       page.goto('https://www.epicgames.com/site/en-US/error-404'),
-      page.waitForNavigation(DEFAULT_OPTIONS)
+      page.waitForNavigation({ waitUntil: 'networkidle2' })
     ])
+
+    await page.waitFor(3000)
 
     const isLoggedInMenuItem = await page.$('.is-logged-in')
     return isLoggedInMenuItem ? page.cookies() : null
@@ -108,8 +116,8 @@ module.exports = {
 
   /**
    * Purchase item(s) on Epic Games
-   * @param {object}         page             Puppeteer browser page
-   * @param {array.<string>} urls             Array of purchase URLs
+   * @param {object}         page Puppeteer browser page
+   * @param {array.<string>} urls Array of purchase URLs
    */
   purchaseAll: async (page, urls) => {
     await page.setCookie(...AGE_GATE_COOKIE)
@@ -117,17 +125,20 @@ module.exports = {
     for (const url of urls) {
       await Promise.all([
         page.goto(url),
-        page.waitForNavigation(DEFAULT_OPTIONS),
-        page.waitFor(5000) // Give URL time to resolve
+        page.waitForNavigation({ waitUntil: 'networkidle2' })
       ])
 
-      const isItemAvailable = page.url().includes('purchase')
+      await page.waitFor(3000)
+
+      const isItemAvailable = page.url().includes('/purchase/verify')
 
       if (!isItemAvailable) {
         continue
       }
 
       const purchaseButton = await page.waitForSelector('.btn-primary')
+
+      await page.waitFor(1000)
 
       await Promise.all([
         purchaseButton.click(),

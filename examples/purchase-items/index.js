@@ -1,39 +1,71 @@
+const puppeteer = require('puppeteer')
+const bot = require('epic-games-bot')
+const fs = require('fs').promises
+
+const fallbackLogin = async (usernameOrEmail, password) => {
+  let browser = null
+
+  try {
+    // Use new browser without headless to allow captcha completion
+    browser = await puppeteer.launch({ headless: false })
+    const page = await browser.newPage()
+    return await bot.login(page, usernameOrEmail, password)
+  }
+  catch (error) {
+    throw error
+  }
+  finally {
+    if (browser !== null) {
+      await browser.close()
+    }
+  }
+}
+
 (async () => {
-  const puppeteer = require('puppeteer')
-  const bot = require('epic-games-bot')
   let browser = null
 
   try {
     browser = await puppeteer.launch({ headless: true })
     const page = await browser.newPage()
 
+    // Get all purchase URLs
     const urls = await bot.getURLs(page)
-    urls.forEach(url => console.log(url))
 
-    // Optional: Provide existing saved cookies
+    console.info('Purchase URLs:')
+    urls.forEach(url => console.info(url))
+
     let cookies = null
 
-    if (cookies) {
+    // Provide existing saved cookies from file
+    try {
+      const cookiesJSON = await fs.readFile('./cookies.json')
+      cookies = JSON.parse(cookiesJSON)
+
       // Log in and get updated cookies
       await page.setCookie(...cookies)
       cookies = await bot.login(page)
     }
-    else {
-      // Provide account credentials to login
+    catch (error) {
+      console.info('Unable to log in using existing cookies')
+    }
+
+    if (!cookies) {
+      // Provide account credentials for fallback login
       const usernameOrEmail = ''
       const password = ''
-      cookies = await bot.login(page, usernameOrEmail, password)
+      cookies = await fallbackLogin(usernameOrEmail, password)
+      await page.setCookie(...cookies)
     }
 
-    console.log(JSON.stringify(cookies, null, 2))
+    // Save cookies to local file
+    await fs.writeFile('./cookies.json', JSON.stringify(cookies))
 
-    // Purchase items if user successfully logged in
-    if (cookies) {
-      await bot.purchaseAll(page, urls)
-    }
+    // Purchase all items
+    await bot.purchaseAll(page, urls)
   }
   catch (error) {
     console.error(error)
+    process.exit(1)
   }
   finally {
     if (browser !== null) {
@@ -41,3 +73,4 @@
     }
   }
 })()
+
