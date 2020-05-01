@@ -25,7 +25,7 @@ npm install epic-games-bot puppeteer
 
 An [example project](https://github.com/george-lim/epic-games-bot/blob/master/examples/purchase-items) is provided to demonstrate how Epic Games Bot can be used alongside Puppeteer to purchase all promotional free items on Epic Games. Login cookies are captured and persisted locally on disk to reuse after one successful login.
 
-Note: SSO login is currently unsupported.
+Note: SSO login is currently unsupported. 2FA support is limited to the authenticator app method.
 
 Execute script on the command line:
 ```bash

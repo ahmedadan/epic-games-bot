@@ -14,8 +14,6 @@ module.exports = {
 
     await page.waitFor(3000)
 
-    await page.setCookie(...AGE_GATE_COOKIE)
-
     const hyperlinks = await page.$x("//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'free')]")
     const hrefs = []
 
@@ -26,6 +24,14 @@ module.exports = {
         hrefs.push(href)
       }
     }
+
+    const cookies = await page.cookies()
+
+    const client = await page.target().createCDPSession()
+    await client.send('Network.clearBrowserCookies')
+    await client.send('Network.clearBrowserCache')
+
+    await page.setCookie(...AGE_GATE_COOKIE)
 
     const urls = []
 
@@ -44,6 +50,8 @@ module.exports = {
           getItemButtons[i].click(),
           page.waitForNavigation()
         ])
+
+        await page.waitFor(3000)
 
         const urlParams = new URLSearchParams(page.url())
         const redirectURL = urlParams.get('redirectUrl')
@@ -64,6 +72,7 @@ module.exports = {
       }
     }
 
+    await page.setCookie(...cookies)
     return urls
   },
 
@@ -72,9 +81,10 @@ module.exports = {
    * @param  {object} page            Puppeteer browser page
    * @param  {string} usernameOrEmail Optional account credential
    * @param  {string} password        Optional account credential
+   * @param  {string} code            Optional 2FA code
    * @return {object}                 Updated login cookies or null if login unsuccessful
    */
-  login: async (page, usernameOrEmail, password) => {
+  login: async (page, usernameOrEmail, password, code) => {
     if (usernameOrEmail && password) {
       await Promise.all([
         page.goto('https://www.epicgames.com/id/login'),
@@ -93,12 +103,38 @@ module.exports = {
       try {
         await Promise.all([
           loginButton.click(),
-          page.waitForNavigation()
+          page.waitForNavigation({ waitUntil: 'networkidle2' })
         ])
       }
       catch (error) {
         throw new Error('Detected CAPTCHA challenge from Epic Games')
       }
+
+      await page.waitFor(3000)
+
+      const is2FAEnabled = page.url().includes('/mfa')
+
+      if (!is2FAEnabled) {
+        return page.cookies()
+      }
+
+      await page.type('#code', code)
+
+      const continueButton = await page.waitForSelector('#continue')
+
+      await page.waitFor(1000)
+
+      try {
+        await Promise.all([
+          continueButton.click(),
+          page.waitForNavigation({ waitUntil: 'networkidle2' })
+        ])
+      }
+      catch (error) {
+        throw new Error('Invalid 2FA code')
+      }
+
+      await page.waitFor(3000)
 
       return page.cookies()
     }
@@ -144,6 +180,8 @@ module.exports = {
         purchaseButton.click(),
         page.waitForNavigation()
       ])
+
+      await page.waitFor(3000)
     }
   }
 }

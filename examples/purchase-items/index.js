@@ -2,14 +2,14 @@ const puppeteer = require('puppeteer')
 const bot = require('epic-games-bot')
 const fs = require('fs').promises
 
-const fallbackLogin = async (usernameOrEmail, password) => {
+const fallbackLogin = async (usernameOrEmail, password, code) => {
   let browser = null
 
   try {
     // Use new browser without headless to allow captcha completion
     browser = await puppeteer.launch({ headless: false })
     const page = await browser.newPage()
-    return await bot.login(page, usernameOrEmail, password)
+    return await bot.login(page, usernameOrEmail, password, code)
   }
   catch (error) {
     throw error
@@ -23,16 +23,11 @@ const fallbackLogin = async (usernameOrEmail, password) => {
 
 (async () => {
   let browser = null
+  let page = null
 
   try {
     browser = await puppeteer.launch({ headless: true })
-    const page = await browser.newPage()
-
-    // Get all purchase URLs
-    const urls = await bot.getURLs(page)
-
-    console.info('Purchase URLs:')
-    urls.forEach(url => console.info(url))
+    page = await browser.newPage()
 
     let cookies = null
 
@@ -53,17 +48,25 @@ const fallbackLogin = async (usernameOrEmail, password) => {
       // Provide account credentials for fallback login
       const usernameOrEmail = ''
       const password = ''
-      cookies = await fallbackLogin(usernameOrEmail, password)
+      const code = ''
+      cookies = await fallbackLogin(usernameOrEmail, password, code)
       await page.setCookie(...cookies)
     }
 
     // Save cookies to local file
     await fs.writeFile('./cookies.json', JSON.stringify(cookies))
 
+    // Get all purchase URLs
+    const urls = await bot.getURLs(page)
+
+    console.info('Purchase URLs:')
+    urls.forEach(url => console.info(url))
+
     // Purchase all items
     await bot.purchaseAll(page, urls)
   }
   catch (error) {
+    await page.screenshot({ path: './error.jpg', type: 'jpeg' });
     console.error(error)
     process.exit(1)
   }
@@ -73,4 +76,3 @@ const fallbackLogin = async (usernameOrEmail, password) => {
     }
   }
 })()
-
