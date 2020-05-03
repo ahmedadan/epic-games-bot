@@ -8,6 +8,8 @@ module.exports = {
    * @return {array.<string>}        Array of purchase URLs
    */
   getURLs: async (page, client) => {
+    console.info('Getting purchase URLs...')
+
     await Promise.all([
       page.goto('https://www.epicgames.com/store/en-US'),
       page.waitForNavigation({ waitUntil: 'networkidle2' })
@@ -18,10 +20,13 @@ module.exports = {
     const hyperlinks = await page.$x("//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'free')]")
     const hrefs = []
 
+    console.info('Game links to check:')
+
     for (const hyperlink of hyperlinks) {
       const href = await page.evaluate(element => element.href, hyperlink)
 
       if (!hrefs.includes(href)) {
+        console.info(href)
         hrefs.push(href)
       }
     }
@@ -45,6 +50,8 @@ module.exports = {
 
       let getItemButtons = await page.$x("//button[contains(., 'Get')]")
 
+      console.info(`Found ${getItemButtons.length} purchase link(s) for: ${href}`)
+
       for (let i = 0; i < getItemButtons.length; ++i) {
         await Promise.all([
           getItemButtons[i].click(),
@@ -55,6 +62,8 @@ module.exports = {
 
         const urlParams = new URLSearchParams(page.url())
         const redirectURL = urlParams.get('redirectUrl')
+
+        console.info(redirectURL)
         urls.push(redirectURL)
 
         if (i + 1 == getItemButtons.length) {
@@ -87,6 +96,8 @@ module.exports = {
    */
   login: async (page, client, usernameOrEmail, password, code) => {
     if (usernameOrEmail && password) {
+      console.info('Logging in with account credentials...')
+
       await Promise.all([
         page.goto('https://www.epicgames.com/id/login'),
         page.waitForNavigation({ waitUntil: 'networkidle2' })
@@ -142,6 +153,8 @@ module.exports = {
       return cookies
     }
 
+    console.info('Logging in with existing cookies...')
+
     await Promise.all([
       page.goto('https://www.epicgames.com/site/en-US/error-404'),
       page.waitForNavigation({ waitUntil: 'networkidle2' })
@@ -150,8 +163,13 @@ module.exports = {
     await page.waitFor(3000)
 
     const isLoggedInMenuItem = await page.$('.is-logged-in')
+
+    if (!isLoggedInMenuItem) {
+      throw new Error('Existing cookies are invalid / expired')
+    }
+
     const cookies = (await client.send('Network.getAllCookies')).cookies
-    return isLoggedInMenuItem ? cookies : null
+    return cookies
   },
 
   /**
@@ -160,6 +178,7 @@ module.exports = {
    * @param {array.<string>} urls Array of purchase URLs
    */
   purchaseAll: async (page, urls) => {
+    console.info('Purchasing items...')
     await page.setCookie(...AGE_GATE_COOKIE)
 
     for (const url of urls) {
@@ -172,7 +191,11 @@ module.exports = {
 
       const isItemAvailable = page.url().includes('/purchase/verify')
 
-      if (!isItemAvailable) {
+      if (isItemAvailable) {
+        console.info(`Available purchase: ${page.url()}`)
+      }
+      else {
+        console.info(`Already purchased: ${page.url()}`)
         continue
       }
 

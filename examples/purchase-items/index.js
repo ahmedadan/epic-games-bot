@@ -4,15 +4,18 @@ const fs = require('fs').promises
 
 const fallbackLogin = async (usernameOrEmail, password, code) => {
   let browser = null
+  let page = null
 
   try {
     // Use new browser without headless to allow captcha completion
     browser = await puppeteer.launch({ headless: false })
-    const page = await browser.newPage()
+    page = await browser.newPage()
+
     const client = await page.target().createCDPSession()
     return await bot.login(page, client, usernameOrEmail, password, code)
   }
   catch (error) {
+    await page.screenshot({ path: './error-fallback-login.jpg', type: 'jpeg' })
     throw error
   }
   finally {
@@ -43,14 +46,13 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
       cookies = await bot.login(page, client)
     }
     catch (error) {
-      console.info('Unable to log in using existing cookies')
-    }
+      console.info('Unable to log in using existing cookies...')
 
-    if (!cookies) {
       // Provide account credentials for fallback login
       const usernameOrEmail = ''
       const password = ''
       const code = ''
+
       cookies = await fallbackLogin(usernameOrEmail, password, code)
       await page.setCookie(...cookies)
     }
@@ -61,14 +63,11 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     // Get all purchase URLs
     const urls = await bot.getURLs(page, client)
 
-    console.info('Purchase URLs:')
-    urls.forEach(url => console.info(url))
-
     // Purchase all items
     await bot.purchaseAll(page, urls)
   }
   catch (error) {
-    await page.screenshot({ path: './error.jpg', type: 'jpeg' });
+    await page.screenshot({ path: './error-main.jpg', type: 'jpeg' })
     console.error(error)
     process.exit(1)
   }
