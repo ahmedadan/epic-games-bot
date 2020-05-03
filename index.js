@@ -92,7 +92,7 @@ module.exports = {
    * @param  {string} usernameOrEmail Optional account credential
    * @param  {string} password        Optional account credential
    * @param  {string} code            Optional 2FA code
-   * @return {object}                 Updated login cookies or null if login unsuccessful
+   * @return {object}                 Updated login cookies
    */
   login: async (page, client, usernameOrEmail, password, code) => {
     if (usernameOrEmail && password) {
