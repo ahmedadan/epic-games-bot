@@ -9,7 +9,8 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     // Use new browser without headless to allow captcha completion
     browser = await puppeteer.launch({ headless: false })
     const page = await browser.newPage()
-    return await bot.login(page, usernameOrEmail, password, code)
+    const client = await page.target().createCDPSession()
+    return await bot.login(page, client, usernameOrEmail, password, code)
   }
   catch (error) {
     throw error
@@ -29,6 +30,7 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     browser = await puppeteer.launch({ headless: true })
     page = await browser.newPage()
 
+    const client = await page.target().createCDPSession()
     let cookies = null
 
     // Provide existing saved cookies from file
@@ -38,7 +40,7 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
 
       // Log in and get updated cookies
       await page.setCookie(...cookies)
-      cookies = await bot.login(page)
+      cookies = await bot.login(page, client)
     }
     catch (error) {
       console.info('Unable to log in using existing cookies')
@@ -57,7 +59,7 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     await fs.writeFile('./cookies.json', JSON.stringify(cookies))
 
     // Get all purchase URLs
-    const urls = await bot.getURLs(page)
+    const urls = await bot.getURLs(page, client)
 
     console.info('Purchase URLs:')
     urls.forEach(url => console.info(url))

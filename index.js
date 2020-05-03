@@ -3,10 +3,11 @@ const AGE_GATE_COOKIE = JSON.parse('[{"name":"HAS_ACCEPTED_AGE_GATE_ONCE","value
 module.exports = {
   /**
    * Get all free item URLs on Epic Games
-   * @param  {object}         page Puppeteer browser page
-   * @return {array.<string>}      Array of purchase URLs
+   * @param  {object}         page   Puppeteer browser page
+   * @param  {object}         client Puppeteer CDPSession
+   * @return {array.<string>}        Array of purchase URLs
    */
-  getURLs: async page => {
+  getURLs: async (page, client) => {
     await Promise.all([
       page.goto('https://www.epicgames.com/store/en-US'),
       page.waitForNavigation({ waitUntil: 'networkidle2' })
@@ -25,9 +26,8 @@ module.exports = {
       }
     }
 
-    const cookies = await page.cookies()
+    const cookies = (await client.send('Network.getAllCookies')).cookies
 
-    const client = await page.target().createCDPSession()
     await client.send('Network.clearBrowserCookies')
     await client.send('Network.clearBrowserCache')
 
@@ -79,12 +79,13 @@ module.exports = {
   /**
    * Log into Epic Games and renew cookies
    * @param  {object} page            Puppeteer browser page
+   * @param  {object} client          Puppeteer CDPSession
    * @param  {string} usernameOrEmail Optional account credential
    * @param  {string} password        Optional account credential
    * @param  {string} code            Optional 2FA code
    * @return {object}                 Updated login cookies or null if login unsuccessful
    */
-  login: async (page, usernameOrEmail, password, code) => {
+  login: async (page, client, usernameOrEmail, password, code) => {
     if (usernameOrEmail && password) {
       await Promise.all([
         page.goto('https://www.epicgames.com/id/login'),
@@ -115,7 +116,8 @@ module.exports = {
       const is2FAEnabled = page.url().includes('/mfa')
 
       if (!is2FAEnabled) {
-        return page.cookies()
+        const cookies = (await client.send('Network.getAllCookies')).cookies
+        return cookies
       }
 
       await page.type('#code', code)
@@ -136,7 +138,8 @@ module.exports = {
 
       await page.waitFor(3000)
 
-      return page.cookies()
+      const cookies = (await client.send('Network.getAllCookies')).cookies
+      return cookies
     }
 
     await Promise.all([
@@ -147,7 +150,8 @@ module.exports = {
     await page.waitFor(3000)
 
     const isLoggedInMenuItem = await page.$('.is-logged-in')
-    return isLoggedInMenuItem ? page.cookies() : null
+    const cookies = (await client.send('Network.getAllCookies')).cookies
+    return isLoggedInMenuItem ? cookies : null
   },
 
   /**
