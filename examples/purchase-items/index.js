@@ -15,7 +15,10 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     return await bot.login(page, client, usernameOrEmail, password, code)
   }
   catch (error) {
-    await page.screenshot({ path: './error-fallback-login.jpg', type: 'jpeg' })
+    if (page !== null) {
+      await page.screenshot({ path: './error-fallback-login.jpg', type: 'jpeg' })
+    }
+
     throw error
   }
   finally {
@@ -67,8 +70,12 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     await bot.purchaseAll(page, urls)
   }
   catch (error) {
-    await page.screenshot({ path: './error-main.jpg', type: 'jpeg' })
     console.error(error)
+
+    if (page !== null) {
+      await page.screenshot({ path: './error-main.jpg', type: 'jpeg' })
+    }
+
     process.exit(1)
   }
   finally {
