@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer')
 const bot = require('epic-games-bot')
 const fs = require('fs').promises
 
-const fallbackLogin = async (usernameOrEmail, password, code) => {
+const fallbackLogin = async (email, password, code) => {
   let browser = null
   let page = null
 
@@ -12,7 +12,7 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
     page = await browser.newPage()
 
     const client = await page.target().createCDPSession()
-    return await bot.login(page, client, usernameOrEmail, password, code)
+    return await bot.login(page, client, email, password, code)
   }
   catch (error) {
     if (page !== null) {
@@ -52,11 +52,11 @@ const fallbackLogin = async (usernameOrEmail, password, code) => {
       console.info('Unable to log in using existing cookies...')
 
       // Provide account credentials for fallback login
-      const usernameOrEmail = ''
+      const email = ''
       const password = ''
       const code = ''
 
-      cookies = await fallbackLogin(usernameOrEmail, password, code)
+      cookies = await fallbackLogin(email, password, code)
       await page.setCookie(...cookies)
     }
 

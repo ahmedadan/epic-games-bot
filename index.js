@@ -89,13 +89,13 @@ module.exports = {
    * Log into Epic Games and renew cookies
    * @param  {object} page            Puppeteer browser page
    * @param  {object} client          Puppeteer CDPSession
-   * @param  {string} usernameOrEmail Optional account credential
+   * @param  {string} email           Optional account credential
    * @param  {string} password        Optional account credential
    * @param  {string} code            Optional 2FA code
    * @return {object}                 Updated login cookies
    */
-  login: async (page, client, usernameOrEmail, password, code) => {
-    if (usernameOrEmail && password) {
+  login: async (page, client, email, password, code) => {
+    if (email && password) {
       console.info('Logging in with account credentials...')
 
       await Promise.all([
@@ -105,7 +105,11 @@ module.exports = {
 
       await page.waitFor(3000)
 
-      await page.type('#usernameOrEmail', usernameOrEmail)
+      await page.click('#login-with-epic')
+
+      await page.waitFor(1000)
+
+      await page.type('#email', email)
       await page.type('#password', password)
 
       const loginButton = await page.waitForSelector('#login')
