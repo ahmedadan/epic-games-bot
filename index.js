@@ -192,10 +192,10 @@ module.exports = {
     for (const url of urls) {
       await Promise.all([
         page.goto(url),
-        page.waitForNavigation({ waitUntil: 'networkidle2' })
+        page.waitForNavigation()
       ])
 
-      await page.waitFor(3000)
+      await page.waitFor(5000)
 
       const isItemAvailable = page.url().includes('/purchase/verify')
 
