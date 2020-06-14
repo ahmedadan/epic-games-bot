@@ -23,7 +23,11 @@ module.exports = {
     console.info('Game links to check:')
 
     for (const hyperlink of hyperlinks) {
-      const href = await page.evaluate(element => element.href, hyperlink)
+      let href = await page.evaluate(element => element.href, hyperlink)
+
+      if (!href.endsWith("/home")) {
+        href = href.concat("/home")
+      }
 
       if (!hrefs.includes(href)) {
         console.info(href)
