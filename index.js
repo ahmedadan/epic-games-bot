@@ -8,7 +8,7 @@ module.exports = {
    * @return {array.<string>}        Array of purchase URLs
    */
   getURLs: async (page, client) => {
-    console.info('Getting purchase URLs...')
+    console.info('Getting purchase URL(s)...')
 
     await Promise.all([
       page.goto('https://www.epicgames.com/store/en-US'),
@@ -18,20 +18,19 @@ module.exports = {
     await page.waitFor(3000)
 
     const hyperlinks = await page.$x("//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'free')]")
-    const hrefs = []
+    const itemURLs = []
 
-    console.info('Game links to check:')
+    console.info('Item URL(s):')
 
     for (const hyperlink of hyperlinks) {
-      let href = await page.evaluate(element => element.href, hyperlink)
+      let url = await page.evaluate(element => element.href, hyperlink)
 
-      if (!href.endsWith("/home")) {
-        href = href.concat("/home")
+      if (!itemURLs.includes(url)) {
+        console.info(url)
+        itemURLs.push(url)
       }
-
-      if (!hrefs.includes(href)) {
-        console.info(href)
-        hrefs.push(href)
+      else {
+        console.info(url + ' (duplicate)')
       }
     }
 
@@ -42,11 +41,11 @@ module.exports = {
 
     await page.setCookie(...AGE_GATE_COOKIE)
 
-    const urls = []
+    const purchaseURLs = []
 
-    for (const href of hrefs) {
+    for (const url of itemURLs) {
       await Promise.all([
-        page.goto(href),
+        page.goto(url),
         page.waitForNavigation({ waitUntil: 'networkidle2' })
       ])
 
@@ -54,7 +53,7 @@ module.exports = {
 
       let getItemButtons = await page.$x("//button[contains(., 'Get')]")
 
-      console.info(`Found ${getItemButtons.length} purchase link(s) for: ${href}`)
+      console.info(`Found ${getItemButtons.length} purchase URL(s) for: ${url}`)
 
       for (let i = 0; i < getItemButtons.length; ++i) {
         await Promise.all([
@@ -67,8 +66,13 @@ module.exports = {
         const urlParams = new URLSearchParams(page.url())
         const redirectURL = urlParams.get('redirectUrl')
 
-        console.info(redirectURL)
-        urls.push(redirectURL)
+        if (!purchaseURLs.includes(redirectURL)) {
+          console.info(redirectURL)
+          purchaseURLs.push(redirectURL)
+        }
+        else {
+          console.info(redirectURL + ' (duplicate)')
+        }
 
         if (i + 1 == getItemButtons.length) {
           break
@@ -86,7 +90,7 @@ module.exports = {
     }
 
     await page.setCookie(...cookies)
-    return urls
+    return purchaseURLs
   },
 
   /**
