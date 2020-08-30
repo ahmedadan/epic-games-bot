@@ -143,9 +143,12 @@ module.exports = {
         return cookies
       }
 
-      await page.type('#code', code)
+      const codeInput = await page.waitForSelector('#code')
+      await codeInput.click()
+      await page.evaluate((element, value) => element.value = value, codeInput, code);
 
       const continueButton = await page.waitForSelector('#continue')
+      await continueButton.click()
 
       await page.waitFor(1000)
 
