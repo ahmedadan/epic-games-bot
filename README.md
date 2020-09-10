@@ -7,7 +7,7 @@
 [![license](https://img.shields.io/github/license/george-lim/epic-games-bot)](https://github.com/george-lim/epic-games-bot/blob/master/LICENSE)
 <!-- [END badges] -->
 
-> Epic Games Bot is a Node library that finds and purchases all promotional free games + add-ons on Epic Games. All communication is handled through the [Puppeteer API](https://github.com/puppeteer/puppeteer/blob/v2.1.1/docs/api.md).
+> Epic Games Bot is a Node library that finds and purchases all promotional free items on Epic Games. All communication is handled through the [Puppeteer API](https://github.com/puppeteer/puppeteer/blob/v2.1.1/docs/api.md).
 
 <!-- [START getstarted] -->
 ## Getting Started
@@ -23,13 +23,14 @@ npm install epic-games-bot puppeteer
 
 ### Usage
 
-An [example project](https://github.com/george-lim/epic-games-bot/blob/master/examples/purchase-items) is provided to demonstrate how Epic Games Bot can be used alongside Puppeteer to purchase all promotional free items on Epic Games. Login cookies are captured and persisted locally on disk to reuse after one successful login.
+[Example projects](https://github.com/george-lim/epic-games-bot/blob/master/examples) are provided to demonstrate how Epic Games Bot can be used alongside Puppeteer to find and purchase all promotional free items.
 
 Note: SSO login is currently unsupported. 2FA support is limited to the authenticator app method.
 
 Execute script on the command line:
 ```bash
-cd examples/purchase-items
+cd examples/get-purchase-urls
+# or "cd examples/purchase-items"
 npm install
 # or "yarn install"
 node .

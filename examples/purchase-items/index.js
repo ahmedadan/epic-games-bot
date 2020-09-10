@@ -1,86 +1,71 @@
-const puppeteer = require('puppeteer')
-const bot = require('epic-games-bot')
-const fs = require('fs').promises
-
-const fallbackLogin = async (email, password, code) => {
-  let browser = null
-  let page = null
-
-  try {
-    // Use new browser without headless to allow captcha completion
-    browser = await puppeteer.launch({ headless: false })
-    page = await browser.newPage()
-
-    const client = await page.target().createCDPSession()
-    return await bot.login(page, client, email, password, code)
-  }
-  catch (error) {
-    if (page !== null) {
-      await page.screenshot({ path: './error-fallback-login.jpg', type: 'jpeg' })
-    }
-
-    throw error
-  }
-  finally {
-    if (browser !== null) {
-      await browser.close()
-    }
-  }
-}
-
 (async () => {
-  let browser = null
-  let page = null
+  const puppeteer = require('puppeteer');
+  const epicGames = require('epic-games-bot');
+  const fs = require('fs').promises;
+
+  let browser = null;
+  let page = null;
+
+  // Account credentials
+  const username = '';
+  const password = '';
+  const code = null; // optional
 
   try {
-    browser = await puppeteer.launch({ headless: true })
-    page = await browser.newPage()
+    browser = await puppeteer.launch({ headless: true });
+    page = await browser.newPage();
+    const client = await page.target().createCDPSession();
+    let cookies = null;
 
-    const client = await page.target().createCDPSession()
-    let cookies = null
-
-    // Provide existing saved cookies from file
+    // Import cookies from file
     try {
-      const cookiesJSON = await fs.readFile('./cookies.json')
-      cookies = JSON.parse(cookiesJSON)
-
-      // Log in and get updated cookies
-      await page.setCookie(...cookies)
-      cookies = await bot.login(page, client)
+      console.debug('Importing existing cookies...');
+      const cookiesJSON = await fs.readFile('./cookies.json');
+      cookies = JSON.parse(cookiesJSON);
     }
     catch (error) {
-      console.info('Unable to log in using existing cookies...')
-
-      // Provide account credentials for fallback login
-      const email = ''
-      const password = ''
-      const code = ''
-
-      cookies = await fallbackLogin(email, password, code)
-      await page.setCookie(...cookies)
+      console.debug('Failed to import existing cookies.');
     }
 
-    // Save cookies to local file
-    await fs.writeFile('./cookies.json', JSON.stringify(cookies))
+    // Log into Epic Games and get cookies
+    try {
+      console.debug('Logging in with existing cookies...');
+      await page.setCookie(...cookies);
+      cookies = await epicGames.logIn(page, client);
+    }
+    catch (error) {
+      console.debug('Failed to log in with existing cookies.');
+      console.debug('Logging in with account credentials...');
+      cookies = await epicGames.logIn(page, client, username, password, code);
+    }
 
-    // Get all purchase URLs
-    const urls = await bot.getURLs(page, client)
+    // Save cookies to file
+    console.debug('Successfully logged into Epic Games!');
+    await fs.writeFile('./cookies.json', JSON.stringify(cookies));
 
-    // Purchase all items
-    await bot.purchaseAll(page, urls)
+    // Get purchase URLs for all promotional free items
+    console.debug('Getting purchase URLs...');
+    const purchaseUrls = await epicGames.getPurchaseUrls(page, client);
+
+    // Purchase items with purchase URLs
+    console.debug('Purchasing items...');
+    const successfulPurchaseUrls = await epicGames.purchaseItems(page, purchaseUrls);
+
+    // Print successful purchase URLs
+    successfulPurchaseUrls.forEach(element => console.log(element));
+    await browser.close();
   }
   catch (error) {
-    console.error(error)
+    console.error(error);
 
-    if (page !== null) {
-      await page.screenshot({ path: './error-main.jpg', type: 'jpeg' })
+    if (page) {
+      await page.screenshot({ path: './error-screenshot.jpg', type: 'jpeg' });
     }
 
-    process.exit(1)
-  }
-  finally {
-    if (browser !== null) {
-      await browser.close()
+    if (browser) {
+      await browser.close();
     }
+
+    process.exit(1);
   }
-})()
+})();
