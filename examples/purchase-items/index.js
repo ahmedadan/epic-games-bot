@@ -1,18 +1,19 @@
 (async () => {
   const puppeteer = require('puppeteer');
   const epicGames = require('epic-games-bot');
+  require('dotenv').config();
   const fs = require('fs').promises;
 
   let browser = null;
   let page = null;
 
   // Account credentials
-  const username = '';
-  const password = '';
+  const username = process.env.USER;
+  const password = process.env.PASS;
   const code = null; // optional
 
   try {
-    browser = await puppeteer.launch({ headless: true });
+    browser = await puppeteer.launch({ headless: false });
     page = await browser.newPage();
     const client = await page.target().createCDPSession();
     let cookies = null;

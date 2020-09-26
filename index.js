@@ -105,8 +105,8 @@ module.exports.logIn = async (page, client, email, password, code) => {
     await page.click('#login-with-epic');
     await page.waitFor(1000);
 
-    await page.type('#email', email);
-    await page.type('#password', password);
+    await page.type('#email', email, {delay: 101});
+    await page.type('#password', password, {delay: 100});
 
     const logInButton = await page.waitForSelector('#login');
     await page.waitFor(1000);

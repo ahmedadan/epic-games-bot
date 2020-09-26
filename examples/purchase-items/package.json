@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "dotenv": "^8.2.0",
     "epic-games-bot": "../..",
     "puppeteer": "^5.2.1"
   }
