@@ -15,5 +15,8 @@
     "bot"
   ],
   "author": "George Lim",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^5.3.1"
+  }
 }
