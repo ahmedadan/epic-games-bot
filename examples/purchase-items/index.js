@@ -1,6 +1,7 @@
 (async () => {
   const puppeteer = require('puppeteer');
   const epicGames = require('epic-games-bot');
+  const totp = require('totp-generator');
   require('dotenv').config();
   const fs = require('fs').promises;
 
@@ -10,7 +11,7 @@
   // Account credentials
   const username = process.env.USER;
   const password = process.env.PASS;
-  const code = null; // optional
+  let code = null;
 
   try {
     browser = await puppeteer.launch({ headless: false });
@@ -37,6 +38,7 @@
     catch (error) {
       console.debug('Failed to log in with existing cookies.');
       console.debug('Logging in with account credentials...');
+      code = totp(process.env.CODE);
       cookies = await epicGames.logIn(page, client, username, password, code);
     }
 
