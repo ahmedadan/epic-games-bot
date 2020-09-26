@@ -3,7 +3,7 @@
   "version": "1.0.15",
   "description": "Find and purchase all promotional free items on Epic Games",
   "main": "index.js",
-  "repository": "github:george-lim/epic-games-bot",
+  "repository": "github:ahmedadan/epic-games-bot",
   "keywords": [
     "nodejs",
     "puppeteer",
