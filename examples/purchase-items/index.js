@@ -1,7 +1,7 @@
 (async () => {
   const puppeteer = require('puppeteer');
   const epicGames = require('epic-games-bot');
-  const totp = require('totp-generator');
+  let totp = require('totp-generator');
   require('dotenv').config();
   const fs = require('fs').promises;
 
@@ -11,7 +11,7 @@
   // Account credentials
   const username = process.env.USER;
   const password = process.env.PASS;
-  let code = null;
+  let code = totp(process.env.CODE);
 
   try {
     browser = await puppeteer.launch({ headless: false });
